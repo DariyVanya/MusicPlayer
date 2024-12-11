@@ -33,6 +33,14 @@ class MainActivity : AppCompatActivity(), Player.Listener{
         setupPlayer()
         addMp3Files()
         addMp4Files()
+
+        if (savedInstanceState != null){
+            savedInstanceState.getInt("mediaItem").let{ restoredMedia ->
+                val seekTime = savedInstanceState.getLong("SeekTime")
+                player.seekTo(restoredMedia, seekTime)
+                player.play()
+            }
+        }
     }
 
     private fun setupPlayer(){
@@ -40,6 +48,13 @@ class MainActivity : AppCompatActivity(), Player.Listener{
         playerView = findViewById(R.id.video_view)
         playerView.player = player
         player.addListener(this)
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+
+        outState.putLong("SeekTime", player.currentPosition)
+        outState.putInt("mediaItem", player.currentMediaItemIndex)
     }
 
     private fun addMp4Files(){
@@ -66,6 +81,11 @@ class MainActivity : AppCompatActivity(), Player.Listener{
             }
 
         }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        player.release()
     }
 
     override fun onMediaMetadataChanged(mediaMetadata: MediaMetadata) {
