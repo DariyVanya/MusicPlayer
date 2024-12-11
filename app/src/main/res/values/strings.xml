@@ -1,0 +1,18 @@
+<resources>
+    <string name="app_name">MusicPlayer</string>
+    <string name="TrackName">Undefined</string>
+    <string name="playBtnText">⏵︎</string>
+    <string name="pauseBtnText">⏸</string>
+    <string name="nextBtnText">⏩︎︎︎</string>
+    <string name="prevBtnText">⏪︎︎︎</string>
+    <string name="cycleBtnText">︎︎︎🔁</string>
+    <string name="cycleOneBtnText">🔂︎︎︎</string>
+    <string name="shuffleBtnText">🔀︎︎︎</string>
+
+    <string name="currentDurationText">0:00</string>
+    <string name="fullDurationText">4:00</string>
+    <string name="searchTxt">search</string>
+    <string name="playListTxt">undefined</string>
+
+
+</resources>
