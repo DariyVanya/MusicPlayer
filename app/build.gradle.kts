@@ -46,4 +46,6 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+    // https://mvnrepository.com/artifact/androidx.work/work-runtime-ktx
+    runtimeOnly("androidx.work:work-runtime-ktx:2.7.1")
 }
