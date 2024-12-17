@@ -34,7 +34,6 @@ class MainActivity : AppCompatActivity(){
         //Current and max duration textView
         val currentText: TextView = findViewById(R.id.progress_current)
         val maxText: TextView = findViewById(R.id.progress_max)
-        maxText.
 
         // play listener
         val playBtn: ImageButton = findViewById(R.id.play_btn)
