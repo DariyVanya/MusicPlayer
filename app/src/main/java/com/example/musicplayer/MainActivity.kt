@@ -30,19 +30,19 @@ class MainActivity : AppCompatActivity(){
         return res
     }
 
-    fun goToPlayer(){
+    fun goToPlayer(mediaPlayer: MediaPlayer){
         setContentView(R.layout.player_fs)
-        //Creating a mediaPlayer for music.mp3
-        val mediaPlayer: MediaPlayer = MediaPlayer.create(this, R.raw.music)
+
 
         //seekBar
         val seekBar: SeekBar = findViewById(R.id.soundtrack_seekBar)
-        seekBar.progress = 0
+        seekBar.progress = mediaPlayer.currentPosition
         seekBar.max = mediaPlayer.duration
 
         //Current and max duration textView
         val currentText: TextView = findViewById(R.id.progress_current)
         val maxText: TextView = findViewById(R.id.progress_max)
+        currentText.text = getTimeDuration(mediaPlayer.currentPosition)
 
         maxText.text = getTimeDuration(mediaPlayer.duration)
 
@@ -52,8 +52,14 @@ class MainActivity : AppCompatActivity(){
         val backBtn: ImageButton = findViewById(R.id.go_back_btn)
 
 
+        if (mediaPlayer.isPlaying){
+            playBtn.setImageResource(R.drawable.baseline_pause_24)
+        } else {
+            playBtn.setImageResource(R.drawable.baseline_play_arrow_24)
+        }
+
         backBtn.setOnClickListener{
-            goToPlaylist()
+            goToPlaylist(mediaPlayer)
         }
 
         playBtn.setOnClickListener{
@@ -97,18 +103,35 @@ class MainActivity : AppCompatActivity(){
         }
     }
 
-    fun goToPlaylist() {
+    fun goToPlaylist(mediaPlayer: MediaPlayer) {
         setContentView(R.layout.playlist)
+        val playBtn: ImageButton = findViewById(R.id.play_btn_playlist)
+        if (mediaPlayer.isPlaying){
+            playBtn.setImageResource(R.drawable.baseline_pause_24)
+        } else {
+            playBtn.setImageResource(R.drawable.baseline_play_arrow_24)
+        }
+
+        playBtn.setOnClickListener{
+            if (!mediaPlayer.isPlaying) {
+                mediaPlayer.start()
+                playBtn.setImageResource(R.drawable.baseline_pause_24)
+
+            } else {
+                mediaPlayer.pause()
+                playBtn.setImageResource(R.drawable.baseline_play_arrow_24)
+            }
+        }
 
         val imageView: ImageView = findViewById(R.id.soundtrack_cover_img_playlist)
         val titleText: TextView = findViewById(R.id.soundtrack_name)
 
         imageView.setOnClickListener{
-            goToPlayer()
+            goToPlayer(mediaPlayer)
         }
 
         titleText.setOnClickListener{
-            goToPlayer()
+            goToPlayer(mediaPlayer)
         }
 
     }
@@ -116,8 +139,8 @@ class MainActivity : AppCompatActivity(){
     @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        goToPlaylist()
+        val mediaPlayer: MediaPlayer = MediaPlayer.create(this, R.raw.music)
+        goToPlaylist(mediaPlayer)
 
     }
 }
