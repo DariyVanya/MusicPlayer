@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.widget.ImageButton
 import android.widget.ImageView
+import android.widget.ListView
 import android.widget.SeekBar
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -22,6 +23,11 @@ class MainActivity : AppCompatActivity(){
     lateinit var runnable: Runnable
     private var handler = Handler()
 
+    fun play(track: Int):MediaPlayer{
+        val mediaPlayer: MediaPlayer = MediaPlayer.create(this, track)
+        return mediaPlayer
+    }
+
     fun getTimeDuration(time:Int) : String{
         val res: String = String.format("%02d:%02d",
             TimeUnit.MILLISECONDS.toMinutes(time.toLong()),
@@ -30,9 +36,10 @@ class MainActivity : AppCompatActivity(){
         return res
     }
 
-    fun goToPlayer(mediaPlayer: MediaPlayer){
-        setContentView(R.layout.player_fs)
+    fun goToPlayer(importedMediaPlayer: MediaPlayer){
+        var mediaPlayer:MediaPlayer = importedMediaPlayer
 
+        setContentView(R.layout.player_fs)
 
         //seekBar
         val seekBar: SeekBar = findViewById(R.id.soundtrack_seekBar)
@@ -103,7 +110,13 @@ class MainActivity : AppCompatActivity(){
         }
     }
 
-    fun goToPlaylist(mediaPlayer: MediaPlayer) {
+
+
+
+
+
+    fun goToPlaylist(importedMediaPlayer: MediaPlayer) {
+        var mediaPlayer:MediaPlayer = importedMediaPlayer
         setContentView(R.layout.playlist)
         val playBtn: ImageButton = findViewById(R.id.play_btn_playlist)
         if (mediaPlayer.isPlaying){
@@ -125,7 +138,12 @@ class MainActivity : AppCompatActivity(){
 
         val imageView: ImageView = findViewById(R.id.soundtrack_cover_img_playlist)
         val titleText: TextView = findViewById(R.id.soundtrack_name)
+        val list_view: ListView = findViewById(R.id.list_item)
 
+        list_view.setOnClickListener{
+            mediaPlayer = play(R.raw.music)
+            mediaPlayer.start()
+        }
         imageView.setOnClickListener{
             goToPlayer(mediaPlayer)
         }
@@ -139,7 +157,7 @@ class MainActivity : AppCompatActivity(){
     @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val mediaPlayer: MediaPlayer = MediaPlayer.create(this, R.raw.music)
+        var mediaPlayer: MediaPlayer = play(R.raw.music)
         goToPlaylist(mediaPlayer)
 
     }
