@@ -33,6 +33,9 @@ android {
     kotlinOptions {
         jvmTarget = "11"
     }
+    buildFeatures {
+        viewBinding = true
+    }
 }
 
 dependencies {
@@ -41,11 +44,18 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
     implementation(libs.androidx.activity)
-    implementation("com.google.android.exoplayer:exoplayer:2.16.1")
+    implementation(libs.exoplayer.v2161)
     implementation(libs.androidx.constraintlayout)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     // https://mvnrepository.com/artifact/androidx.work/work-runtime-ktx
     runtimeOnly("androidx.work:work-runtime-ktx:2.7.1")
+    implementation (libs.javafaker)
+    implementation (libs.glide.v4142)
+
+    implementation (libs.picasso)
+    implementation (libs.androidx.recyclerview)
+    implementation (libs.glide)
+    implementation (libs.androidx.media)
 }
