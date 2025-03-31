@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    kotlin("plugin.serialization") version "2.1.10"
 }
 
 android {
@@ -58,4 +59,28 @@ dependencies {
     implementation (libs.androidx.recyclerview)
     implementation (libs.glide)
     implementation (libs.androidx.media)
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.6.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
+    implementation("com.squareup.okhttp3:okhttp:4.10.0")
+
+    // below dependency for using retrofit.
+    implementation ("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation ("com.squareup.retrofit2:converter-gson:2.5.0")
+
+// below dependency for using picasso image loading library
+    implementation ("com.squareup.picasso:picasso:2.71828")
+
+    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.1")
+    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.1")
+
+    // Add OkHttp library
+    implementation("com.squareup.okhttp3:okhttp:4.10.0")
+
+    // Add OkHttp Logging Interceptor
+    implementation("com.squareup.okhttp3:logging-interceptor:4.10.0")
+
+    // Retrofit dependencies (if not already included)
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+
 }

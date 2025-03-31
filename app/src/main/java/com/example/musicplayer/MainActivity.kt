@@ -1,6 +1,5 @@
 package com.example.musicplayer
 
-
 import android.annotation.SuppressLint
 import android.os.Bundle
 import android.os.Environment
@@ -18,12 +17,20 @@ import com.example.musicplayer.databinding.PlayerFsBinding
 import com.example.musicplayer.databinding.MainBinding
 import java.util.concurrent.TimeUnit
 import android.Manifest
+import android.content.Context
 import android.net.Uri
 import android.os.Build
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.view.isVisible
+import androidx.lifecycle.lifecycleScope
+import com.example.musicplayer.databinding.CreatePlaylistBinding
 import com.example.musicplayer.databinding.PlaylistBinding
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.internal.notify
 import java.io.File
 
 class MainActivity : AppCompatActivity(){
@@ -47,8 +54,12 @@ class MainActivity : AppCompatActivity(){
     lateinit var mainBinding: MainBinding
     lateinit var playlistBinding: PlaylistBinding
     lateinit var playerLayout: PlayerFsBinding
+    lateinit var createPlaylistBinding: CreatePlaylistBinding
 
     lateinit private var trackAdapter: TrackAdapter
+    lateinit private var playlistAdapter: PlaylistAdapter
+    private lateinit var repository: JamendoRepository
+    private lateinit var playlistStorage: PlaylistStorage
 
     fun getTimeDuration(time:Int) : String{
         val res: String = String.format("%02d:%02d",
@@ -135,14 +146,77 @@ class MainActivity : AppCompatActivity(){
 
 
     }
+    fun goToCreatePlaylist(){
+        setContentView(createPlaylistBinding.root)
+
+        createPlaylistBinding.createBtn.setOnClickListener{
+            val newPlaylist = Playlist(
+                name = createPlaylistBinding.playlistNameTxt.text.toString(),
+                tracks = mutableListOf()
+            )
+            val playlists = playlistStorage.loadPlaylists().toMutableList()
+            playlists.add(newPlaylist)
+            playlistStorage.savePlaylists(playlists)
+            goToPlaylist()
+        }
+        createPlaylistBinding.cancelButton.setOnClickListener{
+            goToPlaylist()
+        }
+    }
 
     fun goToPlaylist(){
         setContentView(playlistBinding.root)
-        init()
+        var tracks:MutableList<Track> = mutableListOf<Track>()
+
+        playlistStorage = PlaylistStorage(this)
+
+        lifecycleScope.launch {
+            // Завантажуємо всі плейлисти і логуємо їх
+            val loadedPlaylists = playlistStorage.loadPlaylists()
+            Log.d("PlaylistStorage", "Loaded playlists: $loadedPlaylists")
+            playlistAdapter.setPlaylistList(loadedPlaylists)
+
+        }
+
+        playBtn = playlistBinding.playBtn
+        linearLayout = playlistBinding.linearLayout
+
+        if (player.isPlaying()){
+            playBtn.setImageResource(R.drawable.baseline_pause_24)
+        } else {
+            playBtn.setImageResource(R.drawable.baseline_play_arrow_24)
+        }
+        playBtn.setOnClickListener{
+            if (!player.isPlaying()) {
+                player.play()
+                playBtn.setImageResource(R.drawable.baseline_pause_24)
+            } else {
+                player.pause()
+                playBtn.setImageResource(R.drawable.baseline_play_arrow_24)
+            }
+        }
+
+        if (player.state == "Stopped"){
+            playlistBinding.nowPlayingMenu.isVisible = false;
+        }
+
+        playlistBinding.createNewBtn.setOnClickListener{
+            goToCreatePlaylist()
+        }
 
         playlistBinding.mainBtn.setOnClickListener{
-
             goToMain()
+        }
+
+        imageView = playlistBinding.nowPlayingImage
+        titleText = playlistBinding.nowPlayingName
+
+        imageView.setOnClickListener{
+            goToPlayer()
+        }
+
+        titleText.setOnClickListener{
+            goToPlayer()
         }
     }
 
@@ -150,7 +224,6 @@ class MainActivity : AppCompatActivity(){
     fun goToMain() {
         setContentView(mainBinding.root)
         init()
-
 
 //        val faker = Faker.instance()
 //        val tracks: List<Track> = (1..10).map {
@@ -163,8 +236,14 @@ class MainActivity : AppCompatActivity(){
 //                uri = TRACK
 //            )
 //        }
-        trackAdapter.setTrackList(getFilesFromDirectory((Environment.getExternalStorageDirectory().path + "/" +Environment.DIRECTORY_DOWNLOADS).toUri()))
-
+        //trackAdapter.setTrackList(getFilesFromDirectory((Environment.getExternalStorageDirectory().path + "/" +Environment.DIRECTORY_DOWNLOADS).toUri()))
+        lifecycleScope.launch {
+            val popularTracks = repository.getPopularTracks()
+            trackAdapter.setTrackList(popularTracks);
+            popularTracks.forEach { track ->
+                Log.d("Jamendo", "Popular Track: $track")
+            }
+        }
 
         playBtn = mainBinding.playBtn
         linearLayout = mainBinding.linearLayout
@@ -173,6 +252,9 @@ class MainActivity : AppCompatActivity(){
             playBtn.setImageResource(R.drawable.baseline_pause_24)
         } else {
             playBtn.setImageResource(R.drawable.baseline_play_arrow_24)
+        }
+        if (player.state == "Stopped"){
+            mainBinding.nowPlayingMenu.isVisible = false;
         }
 
         playBtn.setOnClickListener{
@@ -199,6 +281,7 @@ class MainActivity : AppCompatActivity(){
         titleText.setOnClickListener{
             goToPlayer()
         }
+
     }
 
     fun getFilesFromDirectory(uri: Uri):MutableList<Track>{
@@ -221,6 +304,7 @@ class MainActivity : AppCompatActivity(){
     @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         // Define a requestPermessionLauncher using the RequestPermission contract
         val requestPermissionLauncher =
             registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
@@ -229,9 +313,12 @@ class MainActivity : AppCompatActivity(){
                     mainBinding = MainBinding.inflate(layoutInflater)
                     playerLayout = PlayerFsBinding.inflate(layoutInflater)
                     playlistBinding = PlaylistBinding.inflate(layoutInflater)
-                    player = Player(this, playerFsBinding = playerLayout, mainBinding = mainBinding)
+                    createPlaylistBinding = CreatePlaylistBinding.inflate(layoutInflater)
+                    player = Player(this, playerFsBinding = playerLayout, mainBinding = mainBinding, playlistBinding = playlistBinding)
 
                     trackAdapter = TrackAdapter(mainBinding,playerLayout,player)
+                    playlistAdapter = PlaylistAdapter(mainBinding, player,playlistBinding)
+                    repository = JamendoRepository()
                     goToMain()
                 } else {
                     Toast.makeText(this, "Permission denied", Toast.LENGTH_SHORT).show()
@@ -245,6 +332,7 @@ class MainActivity : AppCompatActivity(){
         }
 
         Log.d("test", "aboba")
+
 
     }
 
@@ -263,10 +351,19 @@ class MainActivity : AppCompatActivity(){
             recyclerView.layoutManager = LinearLayoutManager(this@MainActivity)
             recyclerView.adapter = trackAdapter
         }
+        playlistBinding.apply {
+            recyclerView.layoutManager = LinearLayoutManager(this@MainActivity)
+            recyclerView.adapter = playlistAdapter
+        }
     }
 
-
-
+//    private suspend fun save(context: Context){
+//        withContext(Dispatchers.IO){
+//            context.openFileOutput("tracks.json", Context.MODE_PRIVATE).use {
+//                it.write(STRING.toByteArray())
+//            }
+//        }
+//    }
 
     companion object{
         private val IMAGES = mutableListOf<String>(
@@ -281,10 +378,14 @@ class MainActivity : AppCompatActivity(){
             "https://images.unsplash.com/photo-1546456073-92b9f0a8d413?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&h=600&ixid=MnwxfDB8MXxyYW5kb218fHx8fHx8fHwxNjI0MDE0ODY1&ixlib=rb-1.2.1&q=80&utm_campaign=api-credit&utm_medium=referral&utm_source=unsplash_source&w=800"
         )
         private val TRACK = Environment.getExternalStorageDirectory().path + "/Download/music.mp3"
+        private val STRING = """ 
+            [{"id":1,"name":"music.mp3","genre":"Unknown","artist":"Unknown","photo":"https://images.unsplash.com/photo-1600267185393-e158a98703de?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&h=600&ixid=MnwxfDB8MXxyYW5kb218fHx8fHx8fHwxNjI0MDE0NjQ0&ixlib=rb-1.2.1&q=80&utm_campaign=api-credit&utm_medium=referral&utm_source=unsplash_source&w=800","uri":"/storage/emulated/0/Download/music.mp3"},{"id":2,"name":"surf-curse-freaks.mp3","genre":"Unknown","artist":"Unknown","photo":"https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&h=600&ixid=MnwxfDB8MXxyYW5kb218fHx8fHx8fHwxNjI0MDE0ODE0&ixlib=rb-1.2.1&q=80&utm_campaign=api-credit&utm_medium=referral&utm_source=unsplash_source&w=800","uri":"/storage/emulated/0/Download/surf-curse-freaks.mp3"},{"id":3,"name":"Atsushi Kitajoh - Full Moon Full Life.mp3","genre":"Unknown","artist":"Unknown","photo":"https://images.unsplash.com/photo-1620252655460-080dbec533ca?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&h=600&ixid=MnwxfDB8MXxyYW5kb218fHx8fHx8fHwxNjI0MDE0NzQ1&ixlib=rb-1.2.1&q=80&utm_campaign=api-credit&utm_medium=referral&utm_source=unsplash_source&w=800","uri":"/storage/emulated/0/Download/Atsushi Kitajoh - Full Moon Full Life.mp3"},{"id":4,"name":"Atsushi Kitajoh - It’s Going Down Now.mp3","genre":"Unknown","artist":"Unknown","photo":"https://images.unsplash.com/photo-1613679074971-91fc27180061?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&h=600&ixid=MnwxfDB8MXxyYW5kb218fHx8fHx8fHwxNjI0MDE0NzUz&ixlib=rb-1.2.1&q=80&utm_campaign=api-credit&utm_medium=referral&utm_source=unsplash_source&w=800","uri":"/storage/emulated/0/Download/Atsushi Kitajoh - It’s Going Down Now.mp3"}]
+        """.trimIndent()
     }
 }
 
 
-// Добавити можливість відтворювати відео
-// Категорії аудіо/відео
-// аудіокниги
+
+
+// JSON для запам'ятовування треків та плейлистів
+// окрема безкоштовна API для музики

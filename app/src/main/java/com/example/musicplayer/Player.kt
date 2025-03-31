@@ -6,19 +6,22 @@ import android.net.Uri
 import android.util.Log
 import android.widget.ImageButton
 import com.bumptech.glide.Glide
+import com.example.musicplayer.databinding.CreatePlaylistBinding
 import com.example.musicplayer.databinding.PlayerFsBinding
 import com.example.musicplayer.databinding.MainBinding
+import com.example.musicplayer.databinding.PlaylistBinding
 import java.io.File
 
 class Player(
     private var context: Context,
-    var mediaPlayer: MediaPlayer =MediaPlayer.create(context, R.raw.music),
+    var mediaPlayer: MediaPlayer = MediaPlayer(),
     private var prevTracks: MutableList<Track> = mutableListOf<Track>(),
     private var trackPlaying: Track = Track(),
     private var nextTracks: MutableList<Track> = mutableListOf<Track>(),
     var state: String = "Stopped",
     var mainBinding: MainBinding,
-    var playerFsBinding: PlayerFsBinding
+    var playerFsBinding: PlayerFsBinding,
+    var playlistBinding: PlaylistBinding
 )
 {
 
@@ -35,6 +38,13 @@ class Player(
         Glide.with(context).load(R.drawable.cover)
             .error(R.drawable.cover)
             .placeholder(R.drawable.cover).into(mainBinding.nowPlayingImage)
+
+        playBtn = playlistBinding.playBtn
+        playBtn.setImageResource(R.drawable.baseline_play_arrow_24)
+        playlistBinding.nowPlayingName.text = "Not playing..."
+        Glide.with(context).load(R.drawable.cover)
+            .error(R.drawable.cover)
+            .placeholder(R.drawable.cover).into(playlistBinding.nowPlayingImage)
 
         playBtn = playerFsBinding.playBtn
         playBtn.setImageResource(R.drawable.baseline_play_arrow_24)
@@ -53,7 +63,7 @@ class Player(
     }
     fun pause(){
         mediaPlayer.pause()
-        state = "Stopped"
+        state = "Paused"
     }
     fun seekTo(progress: Int){ mediaPlayer.seekTo(progress) }
 
@@ -71,6 +81,14 @@ class Player(
         Glide.with(context).load(track.photo)
             .error(R.drawable.cover)
             .placeholder(R.drawable.cover).into(mainBinding.nowPlayingImage)
+
+        playBtn = playlistBinding.playBtn
+        playBtn.setImageResource(R.drawable.baseline_pause_24)
+        play()
+        playlistBinding.nowPlayingName.text = track.name
+        Glide.with(context).load(track.photo)
+            .error(R.drawable.cover)
+            .placeholder(R.drawable.cover).into(playlistBinding.nowPlayingImage)
 
         playBtn = playerFsBinding.playBtn
         playBtn.setImageResource(R.drawable.baseline_pause_24)
