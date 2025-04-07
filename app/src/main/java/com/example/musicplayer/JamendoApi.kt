@@ -17,7 +17,8 @@ interface JamendoApi {
     suspend fun getPopularTracks(
         @Query("client_id") clientId: String = "ecb07a90",
         @Query("format") format: String = "json",
+        @Query("limit") limit: Int = 20,
         @Query("order") order: String = "popularity_total",
-        @Query("limit") limit: Int = 20
+        @Query("page") page: Int = 1
     ): JamendoTrackResponse
 }

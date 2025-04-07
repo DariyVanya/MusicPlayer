@@ -4,6 +4,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.view.isVisible
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.example.musicplayer.databinding.MainBinding
@@ -29,6 +30,10 @@ class PlaylistAdapter(var mainBinding: MainBinding, var player: Player,
             binding.imageView.setOnClickListener{
                 var playlistInfoAdapter = PlaylistInfoAdapter(mainBinding, playlistBinding, player)
                 playlistBinding.recyclerView.adapter = playlistInfoAdapter
+                playlistBinding.createNewBtn.isVisible = false
+                playlistBinding.goBackBtn.isVisible = true
+                playlistBinding.playlistNameLbl.isVisible = true
+                playlistBinding.playlistNameLbl.text = playlist.name
                 playlistInfoAdapter.setPlaylistInfo(playlist)
             }
         }

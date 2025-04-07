@@ -14,6 +14,9 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import java.io.File
+import android.app.AlertDialog
+import android.content.Context
+
 
 
 class TrackAdapter(var mainViewBinding:MainBinding,
@@ -40,8 +43,33 @@ class TrackAdapter(var mainViewBinding:MainBinding,
                 mainViewBinding.nowPlayingMenu.isVisible = true;
                 playlistViewBinding.nowPlayingMenu.isVisible = true;
             }
-            binding.addToPlaylistButton.setOnClickListener{
+            binding.addToPlaylistButton.setOnClickListener {
+                val context = itemView.context
+                val playlistsFile = File(context.filesDir, "playlists.json")
 
+                if (!playlistsFile.exists()) {
+                    Log.e("Playlist", "No playlists found.")
+                    return@setOnClickListener
+                }
+
+                val json = playlistsFile.readText()
+                val playlists = Json.decodeFromString<MutableList<Playlist>>(json)
+
+                val playlistNames = playlists.map { it.name }.toTypedArray()
+
+                AlertDialog.Builder(context)
+                    .setTitle("Додати до плейлиста")
+                    .setItems(playlistNames) { _, which ->
+                        val selectedPlaylist = playlists[which]
+                        selectedPlaylist.addTrack(track)
+
+                        val updatedJson = Json.encodeToString(playlists)
+                        playlistsFile.writeText(updatedJson)
+
+                        Log.d("Playlist", "Track '${track.name}' додано до '${selectedPlaylist.name}'")
+                    }
+                    .setNegativeButton("Скасувати", null)
+                    .show()
             }
         }
     }
@@ -72,6 +100,13 @@ class TrackAdapter(var mainViewBinding:MainBinding,
         trackList.addAll(tracks)
         notifyDataSetChanged()
     }
+
+    fun addTracks(newTracks: List<Track>) {
+        val startPos = trackList.size
+        trackList.addAll(newTracks)
+        notifyItemRangeInserted(startPos, newTracks.size)
+    }
+
     fun setTrackList(tracks: List<Track>){
         trackList.clear()
         trackList.addAll(tracks)

@@ -1,23 +1,22 @@
 package com.example.musicplayer
 
-import android.os.Bundle
 import android.util.Log
-import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Query
-import kotlinx.serialization.Serializable
 
 class JamendoRepository {
+
     private val api: JamendoApi
 
     init {
-        val interceptor = HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY }
+        val interceptor = HttpLoggingInterceptor().apply {
+            level = HttpLoggingInterceptor.Level.BODY
+        }
+
         val client = OkHttpClient.Builder()
             .addInterceptor(interceptor)
             .build()
@@ -49,9 +48,9 @@ class JamendoRepository {
         }
     }
 
-    suspend fun getPopularTracks(): List<Track> {
+    suspend fun getPopularTracks(page: Int = 1): List<Track> {
         return try {
-            api.getPopularTracks().results?.map { track ->
+            api.getPopularTracks(page = page).results?.map { track ->
                 Track(
                     id = track.id,
                     name = track.name,

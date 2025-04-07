@@ -25,6 +25,7 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.RecyclerView
 import com.example.musicplayer.databinding.CreatePlaylistBinding
 import com.example.musicplayer.databinding.PlaylistBinding
 import kotlinx.coroutines.Dispatchers
@@ -60,6 +61,11 @@ class MainActivity : AppCompatActivity(){
     lateinit private var playlistAdapter: PlaylistAdapter
     private lateinit var repository: JamendoRepository
     private lateinit var playlistStorage: PlaylistStorage
+
+    private var isLoading = false
+    private var currentPage = 1
+    private val pageSize = 20
+    private val tracks = mutableListOf<Track>()
 
     fun getTimeDuration(time:Int) : String{
         val res: String = String.format("%02d:%02d",
@@ -218,11 +224,26 @@ class MainActivity : AppCompatActivity(){
         titleText.setOnClickListener{
             goToPlayer()
         }
+
+        playlistBinding.playlistBtn.setOnClickListener{
+            playlistBinding.recyclerView.adapter = playlistAdapter
+            playlistBinding.createNewBtn.isVisible = true
+            playlistBinding.goBackBtn.isVisible = false
+            playlistBinding.playlistNameLbl.isVisible = false
+        }
+
+        playlistBinding.goBackBtn.setOnClickListener{
+            playlistBinding.recyclerView.adapter = playlistAdapter
+            playlistBinding.createNewBtn.isVisible = true
+            playlistBinding.goBackBtn.isVisible = false
+            playlistBinding.playlistNameLbl.isVisible = false
+        }
     }
 
 
     fun goToMain() {
         setContentView(mainBinding.root)
+
         init()
 
 //        val faker = Faker.instance()
@@ -239,7 +260,8 @@ class MainActivity : AppCompatActivity(){
         //trackAdapter.setTrackList(getFilesFromDirectory((Environment.getExternalStorageDirectory().path + "/" +Environment.DIRECTORY_DOWNLOADS).toUri()))
         lifecycleScope.launch {
             val popularTracks = repository.getPopularTracks()
-            trackAdapter.setTrackList(popularTracks);
+            tracks.addAll(popularTracks)
+            trackAdapter.setTrackList(tracks);
             popularTracks.forEach { track ->
                 Log.d("Jamendo", "Popular Track: $track")
             }
@@ -354,6 +376,37 @@ class MainActivity : AppCompatActivity(){
         playlistBinding.apply {
             recyclerView.layoutManager = LinearLayoutManager(this@MainActivity)
             recyclerView.adapter = playlistAdapter
+        }
+        mainBinding.recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                super.onScrolled(recyclerView, dx, dy)
+
+                val layoutManager = recyclerView.layoutManager as LinearLayoutManager
+                val totalItemCount = layoutManager.itemCount
+                val lastVisibleItem = layoutManager.findLastVisibleItemPosition()
+
+                if (!isLoading && totalItemCount <= (lastVisibleItem + 5)) {
+                    loadMoreTracks() // 🔁 Завантажуємо нову сторінку
+                }
+            }
+        })
+    }
+
+    private fun loadMoreTracks() {
+        if (isLoading) return
+
+        isLoading = true
+
+        lifecycleScope.launch {
+            val newTracks = repository.getPopularTracks(page = currentPage)
+
+            if (newTracks.isNotEmpty()) {
+                tracks.addAll(newTracks)
+                trackAdapter.notifyItemRangeInserted(tracks.size - newTracks.size, newTracks.size)
+                currentPage++ // ✅ Переходимо на наступну сторінку
+            }
+
+            isLoading = false
         }
     }
 

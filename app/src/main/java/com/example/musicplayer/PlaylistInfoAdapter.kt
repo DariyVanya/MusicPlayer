@@ -34,9 +34,9 @@ class PlaylistInfoAdapter(var mainBinding: MainBinding, var playlistBinding:Play
                 mainBinding.nowPlayingMenu.isVisible = true;
                 playlistBinding.nowPlayingMenu.isVisible = true;
             }
-            binding.addToPlaylistButton.setOnClickListener{
-
-            }
+//            binding.addToPlaylistButton.setOnClickListener{
+//
+//            }
         }
     }
 
