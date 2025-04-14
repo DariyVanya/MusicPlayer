@@ -230,6 +230,7 @@ class MainActivity : AppCompatActivity(){
             playlistBinding.createNewBtn.isVisible = true
             playlistBinding.goBackBtn.isVisible = false
             playlistBinding.playlistNameLbl.isVisible = false
+            playlistBinding.editPlaylist.isVisible = false
         }
 
         playlistBinding.goBackBtn.setOnClickListener{
@@ -237,6 +238,15 @@ class MainActivity : AppCompatActivity(){
             playlistBinding.createNewBtn.isVisible = true
             playlistBinding.goBackBtn.isVisible = false
             playlistBinding.playlistNameLbl.isVisible = false
+            playlistBinding.editPlaylist.isVisible = false
+
+            lifecycleScope.launch {
+                // Завантажуємо всі плейлисти і логуємо їх
+                val loadedPlaylists = playlistStorage.loadPlaylists()
+                Log.d("PlaylistStorage", "Loaded playlists: $loadedPlaylists")
+                playlistAdapter.setPlaylistList(loadedPlaylists)
+
+            }
         }
     }
 

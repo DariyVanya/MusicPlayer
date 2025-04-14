@@ -28,11 +28,12 @@ class PlaylistAdapter(var mainBinding: MainBinding, var player: Player,
 
             binding.nameTextView.text = playlist.name
             binding.imageView.setOnClickListener{
-                var playlistInfoAdapter = PlaylistInfoAdapter(mainBinding, playlistBinding, player)
+                var playlistInfoAdapter = PlaylistInfoAdapter(mainBinding, playlistBinding, player, playlist)
                 playlistBinding.recyclerView.adapter = playlistInfoAdapter
                 playlistBinding.createNewBtn.isVisible = false
                 playlistBinding.goBackBtn.isVisible = true
                 playlistBinding.playlistNameLbl.isVisible = true
+                playlistBinding.editPlaylist.isVisible = true
                 playlistBinding.playlistNameLbl.text = playlist.name
                 playlistInfoAdapter.setPlaylistInfo(playlist)
             }

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/action_add_to_playlist"
+        android:title="Додати до плейлісту"
+        android:icon="@drawable/baseline_add_circle_24" />
+    <item
+        android:id="@+id/action_delete_from_playlist"
+        android:icon="@drawable/baseline_add_circle_24"
+        android:title="Видалити"
+        android:visible="false" />
+</menu>

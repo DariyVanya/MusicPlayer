@@ -1,6 +1,7 @@
 package com.example.musicplayer
 
 import android.net.Uri
+import android.util.Log
 import androidx.core.net.toUri
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
@@ -21,6 +22,8 @@ data class Playlist(
     fun getPhotoString(): String = photo
     fun setTracks(tracks: MutableList<Track>) { this.tracks = tracks }
     fun addTrack(track: Track) { tracks.add(track) }
+    fun deleteTrack (track: Track) { tracks.remove(track) }
+    fun deleteTrack (index: Int) { tracks.removeAt(index) }
     fun addAllTracks(tracks: MutableList<Track>) { this.tracks.addAll(tracks) }
     fun getTracks(): MutableList<Track> = tracks
 

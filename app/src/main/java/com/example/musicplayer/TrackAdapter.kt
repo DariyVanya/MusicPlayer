@@ -16,7 +16,7 @@ import kotlinx.serialization.json.Json
 import java.io.File
 import android.app.AlertDialog
 import android.content.Context
-
+import android.widget.PopupMenu
 
 
 class TrackAdapter(var mainViewBinding:MainBinding,
@@ -33,7 +33,7 @@ class TrackAdapter(var mainViewBinding:MainBinding,
 
         val binding = TrackItemBinding.bind(item)
 
-        fun bind(track: Track){
+        fun bind(track: Track, position: Int){
 
             binding.nameTextView.text = track.name
             binding.artistTextView.text = track.artist
@@ -43,34 +43,60 @@ class TrackAdapter(var mainViewBinding:MainBinding,
                 mainViewBinding.nowPlayingMenu.isVisible = true;
                 playlistViewBinding.nowPlayingMenu.isVisible = true;
             }
-            binding.addToPlaylistButton.setOnClickListener {
-                val context = itemView.context
-                val playlistsFile = File(context.filesDir, "playlists.json")
 
-                if (!playlistsFile.exists()) {
-                    Log.e("Playlist", "No playlists found.")
-                    return@setOnClickListener
-                }
-
-                val json = playlistsFile.readText()
-                val playlists = Json.decodeFromString<MutableList<Playlist>>(json)
-
-                val playlistNames = playlists.map { it.name }.toTypedArray()
-
-                AlertDialog.Builder(context)
-                    .setTitle("Додати до плейлиста")
-                    .setItems(playlistNames) { _, which ->
-                        val selectedPlaylist = playlists[which]
-                        selectedPlaylist.addTrack(track)
-
-                        val updatedJson = Json.encodeToString(playlists)
-                        playlistsFile.writeText(updatedJson)
-
-                        Log.d("Playlist", "Track '${track.name}' додано до '${selectedPlaylist.name}'")
-                    }
-                    .setNegativeButton("Скасувати", null)
-                    .show()
+            binding.trackMenu.setOnClickListener {
+                showPopupMenu(it, track, position)
             }
+
+        }
+        private fun showPopupMenu(view: View, track: Track, position: Int) {
+            val popup = PopupMenu(view.context, view)
+            popup.inflate(R.menu.track_popup_menu)
+            val deleteAction = popup.menu.getItem(1)
+            deleteAction.isVisible = false;
+
+            popup.setOnMenuItemClickListener {
+                when (it.itemId) {
+                    R.id.action_add_to_playlist -> {
+                        val context = itemView.context
+                        val playlistsFile = File(context.filesDir, "playlists.json")
+
+                        if (!playlistsFile.exists()) {
+                            Log.e("Playlist", "No playlists found.")
+                            return@setOnMenuItemClickListener true // ✅ Додаємо return
+                        }
+
+                        val json = playlistsFile.readText()
+                        val playlists = Json.decodeFromString<MutableList<Playlist>>(json)
+
+                        val playlistNames = playlists.map { it.name }.toTypedArray()
+
+                        AlertDialog.Builder(context)
+                            .setTitle("Додати до плейлиста")
+                            .setItems(playlistNames) { _, which ->
+                                val selectedPlaylist = playlists[which]
+                                selectedPlaylist.addTrack(track)
+
+                                val updatedJson = Json.encodeToString(playlists)
+                                playlistsFile.writeText(updatedJson)
+
+                                Log.d(
+                                    "Playlist",
+                                    "Track '${track.name}' додано до '${selectedPlaylist.name}'"
+                                )
+                            }
+                            .setNegativeButton("Скасувати", null)
+                            .show()
+
+                        true
+                    }
+
+                    else -> false
+                }
+            }
+
+
+            popup.show()
         }
     }
 
@@ -80,7 +106,7 @@ class TrackAdapter(var mainViewBinding:MainBinding,
     }
 
     override fun onBindViewHolder(holder: TrackHolder, position: Int) {
-        holder.bind(trackList[position])
+        holder.bind(trackList[position], position)
 
         val context = holder.itemView.context
         Glide.with(context).load(trackList[position].photo).circleCrop()

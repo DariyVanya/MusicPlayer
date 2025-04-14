@@ -43,11 +43,19 @@
         </LinearLayout>
 
         <ImageView
-            android:id="@+id/addToPlaylistButton"
+            android:id="@+id/trackMenu"
             android:layout_width="25dp"
             android:layout_height="25dp"
             android:background="#FFFFFF"
-            app:srcCompat="@drawable/baseline_add_circle_24" />
+            app:srcCompat="@drawable/baseline_expand_more_24" />
+
+
+<!--        <ImageView-->
+<!--            android:id="@+id/addToPlaylistButton"-->
+<!--            android:layout_width="25dp"-->
+<!--            android:layout_height="25dp"-->
+<!--            android:background="#FFFFFF"-->
+<!--            app:srcCompat="@drawable/baseline_add_circle_24" />-->
     </LinearLayout>
 
 </LinearLayout>
