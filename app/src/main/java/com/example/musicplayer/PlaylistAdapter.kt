@@ -24,7 +24,7 @@ class PlaylistAdapter(var mainBinding: MainBinding, var player: Player,
 
         val binding = PlaylistItemBinding.bind(item)
 
-        fun bind(playlist: Playlist){
+        fun bind(playlist: Playlist, position: Int){
 
             binding.nameTextView.text = playlist.name
             binding.imageView.setOnClickListener{
@@ -35,7 +35,13 @@ class PlaylistAdapter(var mainBinding: MainBinding, var player: Player,
                 playlistBinding.playlistNameLbl.isVisible = true
                 playlistBinding.editPlaylist.isVisible = true
                 playlistBinding.playlistNameLbl.text = playlist.name
+
+                playlistBinding.editNameTxt.setText(playlist.name)
+                playlistBinding.editCoverImg.setImageURI(playlist.getPhoto())
+                playlistBinding.editPlaylistPos.setText(position.toString())
                 playlistInfoAdapter.setPlaylistInfo(playlist)
+
+
             }
         }
     }
@@ -46,7 +52,7 @@ class PlaylistAdapter(var mainBinding: MainBinding, var player: Player,
     }
 
     override fun onBindViewHolder(holder: PlaylistHolder, position: Int) {
-        holder.bind(playlistList[position])
+        holder.bind(playlistList[position], position)
 
         val context = holder.itemView.context
         Glide.with(context).load(playlistList[position].getPhotoString()).circleCrop()

@@ -21,6 +21,7 @@ import android.content.Context
 import android.net.Uri
 import android.os.Build
 import android.util.Log
+import android.view.View
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.view.isVisible
@@ -31,6 +32,8 @@ import com.example.musicplayer.databinding.PlaylistBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import okhttp3.internal.notify
 import java.io.File
 
@@ -74,6 +77,15 @@ class MainActivity : AppCompatActivity(){
                     TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(time.toLong())))
         return res
     }
+    var pickImageLauncher =
+        registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+            uri?.let {
+                if (uri != null){
+                    playlistBinding.editCoverImg.setImageURI(it)
+                    playlistBinding.editCoverImg.setTag(it)
+                }
+            }
+        }
 
     fun goToPlayer(){
 
@@ -100,6 +112,7 @@ class MainActivity : AppCompatActivity(){
         nextBtn = playerLayout.nextBtn
         prevBtn = playerLayout.prevBtn
 
+
         if (player.isPlaying()){
             playBtn.setImageResource(R.drawable.baseline_pause_24)
         } else {
@@ -125,6 +138,26 @@ class MainActivity : AppCompatActivity(){
                 player.pause()
                 playBtn.setImageResource(R.drawable.baseline_play_arrow_24)
             }
+        }
+
+        var shuffleMode = 0
+        var loopMode = 0
+        playerLayout.shuffleBtn.setOnClickListener{
+            if (shuffleMode == 0){
+                shuffleMode = 1
+                player.shuffle()
+            }
+            else{
+                shuffleMode = 0
+                player.unshuffle()
+            }
+
+        }
+        playerLayout.loopBtn.setOnClickListener {
+            if (loopMode == 0){ loopMode = 1 }
+            else if (loopMode == 1){ loopMode = 2 }
+            else { loopMode = 0 }
+            player.loop()
         }
 
         seekBar.setOnSeekBarChangeListener(object: SeekBar.OnSeekBarChangeListener {
@@ -247,6 +280,45 @@ class MainActivity : AppCompatActivity(){
                 playlistAdapter.setPlaylistList(loadedPlaylists)
 
             }
+        }
+        playlistBinding.editPlaylist.setOnClickListener{
+
+            playlistBinding.playlistNameLbl.visibility = View.GONE
+            playlistBinding.editPlaylistLyt.visibility = View.VISIBLE
+            playlistBinding.cancelEditBtn.visibility = View.VISIBLE
+            playlistBinding.confirmEditBtn.visibility = View.VISIBLE
+            playlistBinding.editPlaylist.visibility = View.GONE
+            playlistBinding.goBackBtn.visibility = View.GONE
+        }
+        playlistBinding.cancelEditBtn.setOnClickListener{
+            playlistBinding.playlistNameLbl.visibility = View.VISIBLE
+            playlistBinding.editPlaylistLyt.visibility = View.GONE
+            playlistBinding.cancelEditBtn.visibility = View.GONE
+            playlistBinding.confirmEditBtn.visibility = View.GONE
+            playlistBinding.editPlaylist.visibility = View.VISIBLE
+            playlistBinding.goBackBtn.visibility = View.VISIBLE
+        }
+
+        playlistBinding.confirmEditBtn.setOnClickListener{
+            playlistBinding.playlistNameLbl.visibility = View.VISIBLE
+            playlistBinding.editPlaylistLyt.visibility = View.GONE
+            playlistBinding.cancelEditBtn.visibility = View.GONE
+            playlistBinding.confirmEditBtn.visibility = View.GONE
+            playlistBinding.editPlaylist.visibility = View.VISIBLE
+            playlistBinding.goBackBtn.visibility = View.VISIBLE
+
+            val playlists = playlistStorage.loadPlaylists().toMutableList()
+            val playlist = playlists[playlistBinding.editPlaylistPos.text.toString().toInt()]
+            playlist.name = playlistBinding.editNameTxt.text.toString()
+            playlist.setPhoto(playlistBinding.editCoverImg.tag.toString())
+            playlists[playlistBinding.editPlaylistPos.text.toString().toInt()] = playlist
+            playlistStorage.savePlaylists(playlists)
+
+        }
+
+        playlistBinding.editCoverImg.setOnClickListener{
+            pickImageLauncher.launch("image/*")
+
         }
     }
 

@@ -19,6 +19,7 @@ data class Playlist(
     fun getPhoto(): Uri = photo.toUri()
     fun setPhoto(uri: Uri) { photo = uri.toString() }
     fun setPhoto(string: String) { photo = string }
+
     fun getPhotoString(): String = photo
     fun setTracks(tracks: MutableList<Track>) { this.tracks = tracks }
     fun addTrack(track: Track) { tracks.add(track) }

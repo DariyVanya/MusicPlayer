@@ -18,10 +18,12 @@ class Player(
     private var prevTracks: MutableList<Track> = mutableListOf<Track>(),
     private var trackPlaying: Track = Track(),
     private var nextTracks: MutableList<Track> = mutableListOf<Track>(),
+    private var copyTracks: MutableList<Track> = mutableListOf<Track>(),
     var state: String = "Stopped",
     var mainBinding: MainBinding,
     var playerFsBinding: PlayerFsBinding,
-    var playlistBinding: PlaylistBinding
+    var playlistBinding: PlaylistBinding,
+    var isLooping:Int = 0
 )
 {
 
@@ -102,15 +104,20 @@ class Player(
         playerFsBinding.soundtrackSeekBar.max = getDuration()
 
     }
+
     fun shuffle(){
-        TODO()
+        copyTracks = nextTracks
+        nextTracks.shuffle()
     }
-    fun loop(){ mediaPlayer.isLooping = true }
-    fun loopOne(){
-        mediaPlayer.isLooping = true
-        TODO()
+
+    fun unshuffle(){
+        nextTracks = copyTracks
+        copyTracks.clear()
     }
-    fun unloop(){ mediaPlayer.isLooping = false }
+
+    fun loop(){ isLooping = 1 }
+    fun loopOne(){ isLooping = 2 }
+    fun unloop(){ isLooping = 0 }
 
     fun getTrack():Track{ return trackPlaying }
     fun getProgress():Int{ return mediaPlayer.currentPosition }
@@ -134,18 +141,30 @@ class Player(
     }
 
     fun next(){
-        if (nextTracks.size == 0){
-            trackPlaying = Track()
-            stop()
+        if (isLooping == 2){
+            mediaPlayer.seekTo(0)
         } else {
-            setPrev(trackPlaying)
-            Log.d("test", prevTracks.toString())
+            if (nextTracks.size == 0){
+                if (isLooping == 0){
+                    trackPlaying = Track()
+                    stop()
+                } else if (isLooping == 2){
+                    play(prevTracks[0])
+                    prevTracks.removeAt(0)
+                    nextTracks.addAll(prevTracks)
+                }
 
-            play(nextTracks[0])
-            nextTracks.removeAt(0)
+            } else {
+                setPrev(trackPlaying)
+                Log.d("test", prevTracks.toString())
 
-            setOnComplete()
+                play(nextTracks[0])
+                nextTracks.removeAt(0)
+
+                setOnComplete()
+            }
         }
+
 
     }
 
@@ -163,6 +182,4 @@ class Player(
             prevTracks.removeAt(0)
         }
     }
-
-
 }

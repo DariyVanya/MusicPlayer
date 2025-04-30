@@ -137,6 +137,12 @@ class PlaylistInfoAdapter(var mainBinding: MainBinding, var playlistBinding:Play
             Glide.with(context).load(trackList[position].photo).circleCrop()
                 .error(R.drawable.cover)
                 .placeholder(R.drawable.cover).into(holder.binding.imageView)
+            playlistBinding.editCoverImg.setTag(playlist.getPhoto())
+
+
+                // playlistBinding.editNameTxt.setText(playlist.name)
+                // playlistBinding.editCoverImg.setImageURI(playlist.getPhoto())
+
 
         }
 
