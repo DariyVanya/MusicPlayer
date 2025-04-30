@@ -1,6 +1,7 @@
 package com.example.musicplayer
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.os.Bundle
 import android.os.Environment
 import android.os.Handler
@@ -36,6 +37,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import okhttp3.internal.notify
 import java.io.File
+import com.bumptech.glide.Glide
 
 class MainActivity : AppCompatActivity(){
 
@@ -78,14 +80,33 @@ class MainActivity : AppCompatActivity(){
         return res
     }
     var pickImageLauncher =
-        registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
-            uri?.let {
-                if (uri != null){
-                    playlistBinding.editCoverImg.setImageURI(it)
-                    playlistBinding.editCoverImg.setTag(it)
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == RESULT_OK) {
+                result.data?.data?.let { uri ->
+                    // Take persistent permissions right away
+                    val takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    contentResolver.takePersistableUriPermission(uri, takeFlags)
+
+                    // Use Glide to load the image
+                    Glide.with(this)
+                        .load(uri)
+                        .error(R.drawable.cover)
+                        .into(playlistBinding.editCoverImg)
+
+                    playlistBinding.editCoverImg.setTag(uri.toString())
                 }
             }
         }
+
+    fun pickImage() {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "image/*"
+            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                    Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
+        }
+        pickImageLauncher.launch(intent)
+    }
 
     fun goToPlayer(){
 
@@ -146,10 +167,12 @@ class MainActivity : AppCompatActivity(){
             if (shuffleMode == 0){
                 shuffleMode = 1
                 player.shuffle()
+                playerLayout.shuffleBtn.setImageResource(R.drawable.baseline_shuffle_on_24)
             }
             else{
                 shuffleMode = 0
                 player.unshuffle()
+                playerLayout.shuffleBtn.setImageResource(R.drawable.baseline_shuffle_24)
             }
 
         }
@@ -310,15 +333,24 @@ class MainActivity : AppCompatActivity(){
             val playlists = playlistStorage.loadPlaylists().toMutableList()
             val playlist = playlists[playlistBinding.editPlaylistPos.text.toString().toInt()]
             playlist.name = playlistBinding.editNameTxt.text.toString()
-            playlist.setPhoto(playlistBinding.editCoverImg.tag.toString())
+
+            val uriString = playlistBinding.editCoverImg.tag?.toString()
+            if (uriString != null) {
+                try {
+                    val uri = Uri.parse(uriString)
+                    playlist.setPhoto(uri, this)
+                } catch (e: Exception) {
+                    Log.e("MainActivity", "Error setting photo: ${e.message}")
+                    playlist.setPhoto("android.resource://com.example.musicplayer/drawable/cover")
+                }
+            }
+
             playlists[playlistBinding.editPlaylistPos.text.toString().toInt()] = playlist
             playlistStorage.savePlaylists(playlists)
-
         }
 
         playlistBinding.editCoverImg.setOnClickListener{
-            pickImageLauncher.launch("image/*")
-
+            pickImage()
         }
     }
 
@@ -393,7 +425,7 @@ class MainActivity : AppCompatActivity(){
         var tracks: MutableList<Track> = mutableListOf<Track>()
         var listOfFiles = directory.listFiles()?.filter{ it.isFile && (it.extension=="mp3" || it.extension=="m4p" || it.extension=="mp4")}
         listOfFiles?.forEachIndexed(){
-            i, file->
+                i, file->
             tracks.add(Track(
                 id = (i+1).toLong(),
                 name = file.name,
@@ -514,7 +546,7 @@ class MainActivity : AppCompatActivity(){
         )
         private val TRACK = Environment.getExternalStorageDirectory().path + "/Download/music.mp3"
         private val STRING = """ 
-            [{"id":1,"name":"music.mp3","genre":"Unknown","artist":"Unknown","photo":"https://images.unsplash.com/photo-1600267185393-e158a98703de?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&h=600&ixid=MnwxfDB8MXxyYW5kb218fHx8fHx8fHwxNjI0MDE0NjQ0&ixlib=rb-1.2.1&q=80&utm_campaign=api-credit&utm_medium=referral&utm_source=unsplash_source&w=800","uri":"/storage/emulated/0/Download/music.mp3"},{"id":2,"name":"surf-curse-freaks.mp3","genre":"Unknown","artist":"Unknown","photo":"https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&h=600&ixid=MnwxfDB8MXxyYW5kb218fHx8fHx8fHwxNjI0MDE0ODE0&ixlib=rb-1.2.1&q=80&utm_campaign=api-credit&utm_medium=referral&utm_source=unsplash_source&w=800","uri":"/storage/emulated/0/Download/surf-curse-freaks.mp3"},{"id":3,"name":"Atsushi Kitajoh - Full Moon Full Life.mp3","genre":"Unknown","artist":"Unknown","photo":"https://images.unsplash.com/photo-1620252655460-080dbec533ca?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&h=600&ixid=MnwxfDB8MXxyYW5kb218fHx8fHx8fHwxNjI0MDE0NzQ1&ixlib=rb-1.2.1&q=80&utm_campaign=api-credit&utm_medium=referral&utm_source=unsplash_source&w=800","uri":"/storage/emulated/0/Download/Atsushi Kitajoh - Full Moon Full Life.mp3"},{"id":4,"name":"Atsushi Kitajoh - It’s Going Down Now.mp3","genre":"Unknown","artist":"Unknown","photo":"https://images.unsplash.com/photo-1613679074971-91fc27180061?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&h=600&ixid=MnwxfDB8MXxyYW5kb218fHx8fHx8fHwxNjI0MDE0NzUz&ixlib=rb-1.2.1&q=80&utm_campaign=api-credit&utm_medium=referral&utm_source=unsplash_source&w=800","uri":"/storage/emulated/0/Download/Atsushi Kitajoh - It’s Going Down Now.mp3"}]
+            [{"id":1,"name":"music.mp3","genre":"Unknown","artist":"Unknown","photo":"https://images.unsplash.com/photo-1600267185393-e158a98703de?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&h=600&ixid=MnwxfDB8MXxyYW5kb218fHx8fHx8fHwxNjI0MDE0NjQ0&ixlib=rb-1.2.1&q=80&utm_campaign=api-credit&utm_medium=referral&utm_source=unsplash_source&w=800","uri":"/storage/emulated/0/Download/music.mp3"},{"id":2,"name":"surf-curse-freaks.mp3","genre":"Unknown","artist":"Unknown","photo":"https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&h=600&ixid=MnwxfDB8MXxyYW5kb218fHx8fHx8fHwxNjI0MDE0ODE0&ixlib=rb-1.2.1&q=80&utm_campaign=api-credit&utm_medium=referral&utm_source=unsplash_source&w=800","uri":"/storage/emulated/0/Download/surf-curse-freaks.mp3"},{"id":3,"name":"Atsushi Kitajoh - Full Moon Full Life.mp3","genre":"Unknown","artist":"Unknown","photo":"https://images.unsplash.com/photo-1620252655460-080dbec533ca?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&h=600&ixid=MnwxfDB8MXxyYW5kb218fHx8fHx8fHwxNjI0MDE0NzQ1&ixlib=rb-1.2.1&q=80&utm_campaign=api-credit&utm_medium=referral&utm_source=unsplash_source&w=800","uri":"/storage/emulated/0/Download/Atsushi Kitajoh - Full Moon Full Life.mp3"},{"id":4,"name":"Atsushi Kitajoh - It's Going Down Now.mp3","genre":"Unknown","artist":"Unknown","photo":"https://images.unsplash.com/photo-1613679074971-91fc27180061?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&h=600&ixid=MnwxfDB8MXxyYW5kb218fHx8fHx8fHwxNjI0MDE0NzUz&ixlib=rb-1.2.1&q=80&utm_campaign=api-credit&utm_medium=referral&utm_source=unsplash_source&w=800","uri":"/storage/emulated/0/Download/Atsushi Kitajoh - It's Going Down Now.mp3"}]
         """.trimIndent()
     }
 }
@@ -524,3 +556,4 @@ class MainActivity : AppCompatActivity(){
 
 // JSON для запам'ятовування треків та плейлистів
 // окрема безкоштовна API для музики
+

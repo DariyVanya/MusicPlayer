@@ -1,5 +1,6 @@
 package com.example.musicplayer
 
+import android.net.Uri
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -15,12 +16,12 @@ import kotlinx.serialization.json.Json
 
 
 class PlaylistAdapter(var mainBinding: MainBinding, var player: Player,
-    var playlistBinding:PlaylistBinding) : RecyclerView.Adapter<PlaylistAdapter.PlaylistHolder>() {
+                      var playlistBinding:PlaylistBinding) : RecyclerView.Adapter<PlaylistAdapter.PlaylistHolder>() {
     var playlistList = ArrayList<Playlist>()
 
     class PlaylistHolder(item: View, var mainBinding: MainBinding, var player: Player,
-                      var playlistBinding:PlaylistBinding,
-                      var playlistList: ArrayList<Playlist>) : RecyclerView.ViewHolder(item){
+                         var playlistBinding:PlaylistBinding,
+                         var playlistList: ArrayList<Playlist>) : RecyclerView.ViewHolder(item){
 
         val binding = PlaylistItemBinding.bind(item)
 
@@ -37,7 +38,11 @@ class PlaylistAdapter(var mainBinding: MainBinding, var player: Player,
                 playlistBinding.playlistNameLbl.text = playlist.name
 
                 playlistBinding.editNameTxt.setText(playlist.name)
-                playlistBinding.editCoverImg.setImageURI(playlist.getPhoto())
+                Glide.with(binding.imageView.context)
+                    .load(playlist.getPhoto())
+                    .circleCrop()
+                    .error(R.drawable.cover)
+                    .into(playlistBinding.editCoverImg)
                 playlistBinding.editPlaylistPos.setText(position.toString())
                 playlistInfoAdapter.setPlaylistInfo(playlist)
 
@@ -55,9 +60,21 @@ class PlaylistAdapter(var mainBinding: MainBinding, var player: Player,
         holder.bind(playlistList[position], position)
 
         val context = holder.itemView.context
-        Glide.with(context).load(playlistList[position].getPhotoString()).circleCrop()
-            .error(R.drawable.cover)
-            .placeholder(R.drawable.cover).into(holder.binding.imageView)
+        try {
+            val uri = Uri.parse(playlistList[position].getPhotoString())
+            Glide.with(context)
+                .load(uri)
+                .circleCrop()
+                .error(R.drawable.cover)
+                .placeholder(R.drawable.cover)
+                .into(holder.binding.imageView)
+        } catch (e: Exception) {
+            Log.e("PlaylistAdapter", "Error loading image: ${e.message}")
+            Glide.with(context)
+                .load(R.drawable.cover)
+                .circleCrop()
+                .into(holder.binding.imageView)
+        }
 
     }
 

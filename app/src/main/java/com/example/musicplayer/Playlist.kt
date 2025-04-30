@@ -1,5 +1,8 @@
 package com.example.musicplayer
 
+import android.content.ContentResolver
+import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.util.Log
 import androidx.core.net.toUri
@@ -17,7 +20,18 @@ data class Playlist(
 ) {
     fun getSize(): Int = tracks.size
     fun getPhoto(): Uri = photo.toUri()
-    fun setPhoto(uri: Uri) { photo = uri.toString() }
+    fun setPhoto(uri: Uri, context: Context) {
+        photo = uri.toString()
+        try {
+            // Take persistable URI permission with read permission
+            context.contentResolver.takePersistableUriPermission(
+                uri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION
+            )
+        } catch (e: Exception) {
+            Log.e("Playlist", "Error taking permission: ${e.message}")
+        }
+    }
     fun setPhoto(string: String) { photo = string }
 
     fun getPhotoString(): String = photo
@@ -27,5 +41,4 @@ data class Playlist(
     fun deleteTrack (index: Int) { tracks.removeAt(index) }
     fun addAllTracks(tracks: MutableList<Track>) { this.tracks.addAll(tracks) }
     fun getTracks(): MutableList<Track> = tracks
-
 }
