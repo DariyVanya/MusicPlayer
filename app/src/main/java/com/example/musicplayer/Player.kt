@@ -106,12 +106,12 @@ class Player(
     }
 
     fun shuffle(){
-        copyTracks = nextTracks
+        copyTracks = nextTracks.toMutableList()
         nextTracks.shuffle()
     }
 
     fun unshuffle(){
-        nextTracks = copyTracks
+        nextTracks = copyTracks.toMutableList()
         copyTracks.clear()
     }
 
