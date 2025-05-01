@@ -32,8 +32,16 @@ class PlaylistInfoAdapter(var mainBinding: MainBinding, var playlistBinding:Play
             binding.nameTextView.text = track.name
             binding.artistTextView.text = track.artist
             binding.imageView.setOnClickListener {
+                // Set previous tracks (all tracks before current)
+                val prevTracks = trackList.slice(0..trackList.indexOf(track)-1).reversed().toMutableList()
+                player.setPrev(prevTracks)
+
+                // Play current track
                 player.play(track)
-                player.setNext((trackList.slice(trackList.indexOf(track) + 1..trackList.size - 1)).toMutableList())
+
+                // Set next tracks (all tracks after current)
+                val nextTracks = trackList.slice(trackList.indexOf(track)+1..trackList.size-1).toMutableList()
+                player.setNext(nextTracks)
                 mainBinding.nowPlayingMenu.isVisible = true;
                 playlistBinding.nowPlayingMenu.isVisible = true;
             }

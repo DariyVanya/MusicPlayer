@@ -38,6 +38,7 @@ import kotlinx.serialization.json.Json
 import okhttp3.internal.notify
 import java.io.File
 import com.bumptech.glide.Glide
+import com.example.musicplayer.databinding.SearchBinding
 
 class MainActivity : AppCompatActivity(){
 
@@ -61,9 +62,11 @@ class MainActivity : AppCompatActivity(){
     lateinit var playlistBinding: PlaylistBinding
     lateinit var playerLayout: PlayerFsBinding
     lateinit var createPlaylistBinding: CreatePlaylistBinding
+    lateinit var searchBinding: SearchBinding
 
     lateinit private var trackAdapter: TrackAdapter
     lateinit private var playlistAdapter: PlaylistAdapter
+    lateinit private var searchAdapter: SearchAdapter
     private lateinit var repository: JamendoRepository
     private lateinit var playlistStorage: PlaylistStorage
 
@@ -71,6 +74,8 @@ class MainActivity : AppCompatActivity(){
     private var currentPage = 1
     private val pageSize = 20
     private val tracks = mutableListOf<Track>()
+    var shuffleMode = 0
+    var loopMode = 0
 
     fun getTimeDuration(time:Int) : String{
         val res: String = String.format("%02d:%02d",
@@ -109,30 +114,22 @@ class MainActivity : AppCompatActivity(){
     }
 
     fun goToPlayer(){
-
         setContentView(playerLayout.root)
+        initPlayer()
+    }
 
+    private fun initPlayer() {
         seekBar = playerLayout.soundtrackSeekBar
-        //Current and max duration textView
         currentText = playerLayout.progressCurrent
         maxText = playerLayout.progressMax
 
         currentText.text = getTimeDuration(player.getProgress())
         maxText.text = getTimeDuration(player.getDuration())
 
-//        //btnTest
-//        btnTest = findViewById(R.id.button_test)
-//        btnTest.setOnClickListener{
-//            mediaPlayer = MediaPlayer.create(this, R.raw.music)
-//            mediaPlayer.start()
-//        }
-
-        // play listener
         playBtn = playerLayout.playBtn
         backBtn = playerLayout.goBackBtn
         nextBtn = playerLayout.nextBtn
         prevBtn = playerLayout.prevBtn
-
 
         if (player.isPlaying()){
             playBtn.setImageResource(R.drawable.baseline_pause_24)
@@ -140,9 +137,6 @@ class MainActivity : AppCompatActivity(){
             playBtn.setImageResource(R.drawable.baseline_play_arrow_24)
         }
 
-        backBtn.setOnClickListener{
-            goToMain()
-        }
         nextBtn.setOnClickListener{
             player.next()
         }
@@ -161,8 +155,6 @@ class MainActivity : AppCompatActivity(){
             }
         }
 
-        var shuffleMode = 0
-        var loopMode = 0
         playerLayout.shuffleBtn.setOnClickListener{
             if (shuffleMode == 0){
                 shuffleMode = 1
@@ -174,13 +166,24 @@ class MainActivity : AppCompatActivity(){
                 player.unshuffle()
                 playerLayout.shuffleBtn.setImageResource(R.drawable.baseline_shuffle_24)
             }
-
         }
+
         playerLayout.loopBtn.setOnClickListener {
-            if (loopMode == 0){ loopMode = 1 }
-            else if (loopMode == 1){ loopMode = 2 }
-            else { loopMode = 0 }
-            player.loop()
+            if (loopMode == 0){
+                loopMode = 1
+                player.loop()
+                playerLayout.loopBtn.setImageResource(R.drawable.baseline_repeat_on_24)
+            }
+            else if (loopMode == 1){
+                loopMode = 2
+                player.loopOne()
+                playerLayout.loopBtn.setImageResource(R.drawable.baseline_repeat_one_on_24)
+            }
+            else {
+                loopMode = 0
+                player.unloop()
+                playerLayout.loopBtn.setImageResource(R.drawable.baseline_repeat_24)
+            }
         }
 
         seekBar.setOnSeekBarChangeListener(object: SeekBar.OnSeekBarChangeListener {
@@ -191,13 +194,12 @@ class MainActivity : AppCompatActivity(){
             }
 
             override fun onStartTrackingTouch(seekBar: SeekBar?) {
-
             }
 
             override fun onStopTrackingTouch(seekBar: SeekBar?) {
-
             }
         })
+
         runnable = Runnable {
             seekBar.progress = player.getProgress()
             handler.postDelayed (runnable, 1000)
@@ -205,12 +207,14 @@ class MainActivity : AppCompatActivity(){
             maxText.text = getTimeDuration(player.getDuration())
         }
         handler.postDelayed(runnable, 1000)
-
-
     }
+
     fun goToCreatePlaylist(){
         setContentView(createPlaylistBinding.root)
+        initCreatePlaylist()
+    }
 
+    private fun initCreatePlaylist() {
         createPlaylistBinding.createBtn.setOnClickListener{
             val newPlaylist = Playlist(
                 name = createPlaylistBinding.playlistNameTxt.text.toString(),
@@ -228,16 +232,16 @@ class MainActivity : AppCompatActivity(){
 
     fun goToPlaylist(){
         setContentView(playlistBinding.root)
-        var tracks:MutableList<Track> = mutableListOf<Track>()
+        initPlaylist()
+    }
 
+    private fun initPlaylist() {
         playlistStorage = PlaylistStorage(this)
 
         lifecycleScope.launch {
-            // Завантажуємо всі плейлисти і логуємо їх
             val loadedPlaylists = playlistStorage.loadPlaylists()
             Log.d("PlaylistStorage", "Loaded playlists: $loadedPlaylists")
             playlistAdapter.setPlaylistList(loadedPlaylists)
-
         }
 
         playBtn = playlistBinding.playBtn
@@ -248,6 +252,7 @@ class MainActivity : AppCompatActivity(){
         } else {
             playBtn.setImageResource(R.drawable.baseline_play_arrow_24)
         }
+
         playBtn.setOnClickListener{
             if (!player.isPlaying()) {
                 player.play()
@@ -297,15 +302,25 @@ class MainActivity : AppCompatActivity(){
             playlistBinding.editPlaylist.isVisible = false
 
             lifecycleScope.launch {
-                // Завантажуємо всі плейлисти і логуємо їх
                 val loadedPlaylists = playlistStorage.loadPlaylists()
                 Log.d("PlaylistStorage", "Loaded playlists: $loadedPlaylists")
                 playlistAdapter.setPlaylistList(loadedPlaylists)
-
             }
         }
-        playlistBinding.editPlaylist.setOnClickListener{
 
+        playerLayout.goBackBtn.setOnClickListener {
+            goToPlaylist()
+        }
+
+        playlistBinding.searchBtn.setOnClickListener {
+            goToSearch()
+        }
+
+        initPlaylistEditButtons()
+    }
+
+    private fun initPlaylistEditButtons() {
+        playlistBinding.editPlaylist.setOnClickListener{
             playlistBinding.playlistNameLbl.visibility = View.GONE
             playlistBinding.editPlaylistLyt.visibility = View.VISIBLE
             playlistBinding.cancelEditBtn.visibility = View.VISIBLE
@@ -313,6 +328,7 @@ class MainActivity : AppCompatActivity(){
             playlistBinding.editPlaylist.visibility = View.GONE
             playlistBinding.goBackBtn.visibility = View.GONE
         }
+
         playlistBinding.cancelEditBtn.setOnClickListener{
             playlistBinding.playlistNameLbl.visibility = View.VISIBLE
             playlistBinding.editPlaylistLyt.visibility = View.GONE
@@ -354,24 +370,14 @@ class MainActivity : AppCompatActivity(){
         }
     }
 
-
     fun goToMain() {
         setContentView(mainBinding.root)
+        initMain()
+    }
 
+    private fun initMain() {
         init()
 
-//        val faker = Faker.instance()
-//        val tracks: List<Track> = (1..10).map {
-//            Track(
-//                id = it.toLong(),
-//                name = faker.music().genre(),
-//                genre = faker.music().genre(),
-//                artist = faker.name().username(),
-//                photo = IMAGES[it % IMAGES.size],
-//                uri = TRACK
-//            )
-//        }
-        //trackAdapter.setTrackList(getFilesFromDirectory((Environment.getExternalStorageDirectory().path + "/" +Environment.DIRECTORY_DOWNLOADS).toUri()))
         lifecycleScope.launch {
             val popularTracks = repository.getPopularTracks()
             tracks.addAll(popularTracks)
@@ -389,8 +395,13 @@ class MainActivity : AppCompatActivity(){
         } else {
             playBtn.setImageResource(R.drawable.baseline_play_arrow_24)
         }
+
         if (player.state == "Stopped"){
             mainBinding.nowPlayingMenu.isVisible = false;
+        }
+
+        playerLayout.goBackBtn.setOnClickListener{
+            goToMain()
         }
 
         playBtn.setOnClickListener{
@@ -402,10 +413,14 @@ class MainActivity : AppCompatActivity(){
                 playBtn.setImageResource(R.drawable.baseline_play_arrow_24)
             }
         }
+
         mainBinding.playlistBtn.setOnClickListener{
             goToPlaylist()
         }
 
+        mainBinding.searchBtn.setOnClickListener {
+            goToSearch()
+        }
 
         imageView = mainBinding.nowPlayingImage
         titleText = mainBinding.nowPlayingName
@@ -417,7 +432,6 @@ class MainActivity : AppCompatActivity(){
         titleText.setOnClickListener{
             goToPlayer()
         }
-
     }
 
     fun getFilesFromDirectory(uri: Uri):MutableList<Track>{
@@ -437,11 +451,78 @@ class MainActivity : AppCompatActivity(){
         return tracks
     }
 
+    fun goToSearch() {
+        setContentView(searchBinding.root)
+        initSearch()
+    }
+
+    private fun initSearch() {
+        searchBinding.searchBtn.setOnClickListener {
+            val query = searchBinding.searchInput.text.toString()
+            if (query.isNotEmpty()) {
+                lifecycleScope.launch {
+                    val searchResults = repository.searchTracks(query)
+                    searchAdapter.setTrackList(searchResults)
+                }
+            }
+        }
+
+        playBtn = searchBinding.playBtn
+        linearLayout = searchBinding.nowPlayingMenu
+
+        if (player.isPlaying()){
+            playBtn.setImageResource(R.drawable.baseline_pause_24)
+        } else {
+            playBtn.setImageResource(R.drawable.baseline_play_arrow_24)
+        }
+
+        if (player.state == "Stopped"){
+            searchBinding.nowPlayingMenu.isVisible = false
+        }
+
+        playBtn.setOnClickListener{
+            if (!player.isPlaying()) {
+                player.play()
+                playBtn.setImageResource(R.drawable.baseline_pause_24)
+            } else {
+                player.pause()
+                playBtn.setImageResource(R.drawable.baseline_play_arrow_24)
+            }
+        }
+
+        imageView = searchBinding.nowPlayingImage
+        titleText = searchBinding.nowPlayingName
+
+        imageView.setOnClickListener{
+            goToPlayer()
+        }
+
+        titleText.setOnClickListener{
+            goToPlayer()
+        }
+
+        searchBinding.recyclerView.layoutManager = LinearLayoutManager(this)
+        searchBinding.recyclerView.adapter = searchAdapter
+
+        // Navigation menu button handlers
+        searchBinding.mainBtn.setOnClickListener {
+            goToMain()
+        }
+
+        searchBinding.playlistBtn.setOnClickListener {
+            goToPlaylist()
+        }
+
+        playerLayout.goBackBtn.setOnClickListener {
+            goToSearch()
+        }
+
+    }
+
     @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Define a requestPermessionLauncher using the RequestPermission contract
         val requestPermissionLauncher =
             registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
                 if (isGranted) {
@@ -450,10 +531,12 @@ class MainActivity : AppCompatActivity(){
                     playerLayout = PlayerFsBinding.inflate(layoutInflater)
                     playlistBinding = PlaylistBinding.inflate(layoutInflater)
                     createPlaylistBinding = CreatePlaylistBinding.inflate(layoutInflater)
-                    player = Player(this, playerFsBinding = playerLayout, mainBinding = mainBinding, playlistBinding = playlistBinding)
+                    searchBinding = SearchBinding.inflate(layoutInflater)
+                    player = Player(this, playerFsBinding = playerLayout, mainBinding = mainBinding, playlistBinding = playlistBinding, searchBinding = searchBinding)
 
-                    trackAdapter = TrackAdapter(mainBinding,playerLayout,player)
-                    playlistAdapter = PlaylistAdapter(mainBinding, player,playlistBinding)
+                    trackAdapter = TrackAdapter(mainBinding, playerLayout, player)
+                    playlistAdapter = PlaylistAdapter(mainBinding, player, playlistBinding)
+                    searchAdapter = SearchAdapter(searchBinding, playerLayout, player)
                     repository = JamendoRepository()
                     goToMain()
                 } else {
@@ -468,19 +551,7 @@ class MainActivity : AppCompatActivity(){
         }
 
         Log.d("test", "aboba")
-
-
     }
-
-//    override fun onResume() {
-//        super.onResume()
-//        player = Player(this)
-//        playlistLayout = PlaylistBinding.inflate(layoutInflater)
-//        playerLayout = PlayerFsBinding.inflate(layoutInflater)
-//
-//        trackAdapter = TrackAdapter(playlistLayout,playerLayout,player)
-//        goToPlaylist()
-//    }
 
     private fun init(){
         mainBinding.apply {
@@ -524,14 +595,6 @@ class MainActivity : AppCompatActivity(){
         }
     }
 
-//    private suspend fun save(context: Context){
-//        withContext(Dispatchers.IO){
-//            context.openFileOutput("tracks.json", Context.MODE_PRIVATE).use {
-//                it.write(STRING.toByteArray())
-//            }
-//        }
-//    }
-
     companion object{
         private val IMAGES = mutableListOf<String>(
             "https://images.unsplash.com/photo-1600267185393-e158a98703de?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&h=600&ixid=MnwxfDB8MXxyYW5kb218fHx8fHx8fHwxNjI0MDE0NjQ0&ixlib=rb-1.2.1&q=80&utm_campaign=api-credit&utm_medium=referral&utm_source=unsplash_source&w=800",
@@ -551,9 +614,4 @@ class MainActivity : AppCompatActivity(){
     }
 }
 
-
-
-
-// JSON для запам'ятовування треків та плейлистів
-// окрема безкоштовна API для музики
 

@@ -10,6 +10,7 @@ import com.example.musicplayer.databinding.CreatePlaylistBinding
 import com.example.musicplayer.databinding.PlayerFsBinding
 import com.example.musicplayer.databinding.MainBinding
 import com.example.musicplayer.databinding.PlaylistBinding
+import com.example.musicplayer.databinding.SearchBinding
 import java.io.File
 
 class Player(
@@ -23,6 +24,7 @@ class Player(
     var mainBinding: MainBinding,
     var playerFsBinding: PlayerFsBinding,
     var playlistBinding: PlaylistBinding,
+    var searchBinding: SearchBinding,
     var isLooping:Int = 0
 )
 {
@@ -71,14 +73,12 @@ class Player(
 
     fun play(track: Track){
         mediaPlayer.stop()
-        val file = File(track.uri)
         mediaPlayer = MediaPlayer.create(context, Uri.parse(track.uri))
         trackPlaying = track
-        play()
 
         var playBtn: ImageButton = mainBinding.playBtn
         playBtn.setImageResource(R.drawable.baseline_pause_24)
-        play()
+
         mainBinding.nowPlayingName.text = track.name
         Glide.with(context).load(track.photo)
             .error(R.drawable.cover)
@@ -86,11 +86,19 @@ class Player(
 
         playBtn = playlistBinding.playBtn
         playBtn.setImageResource(R.drawable.baseline_pause_24)
-        play()
+
         playlistBinding.nowPlayingName.text = track.name
         Glide.with(context).load(track.photo)
             .error(R.drawable.cover)
             .placeholder(R.drawable.cover).into(playlistBinding.nowPlayingImage)
+
+        playBtn = searchBinding.playBtn
+        playBtn.setImageResource(R.drawable.baseline_pause_24)
+
+        searchBinding.nowPlayingName.text = track.name
+        Glide.with(context).load(track.photo)
+            .error(R.drawable.cover)
+            .placeholder(R.drawable.cover).into(searchBinding.nowPlayingImage)
 
         playBtn = playerFsBinding.playBtn
         playBtn.setImageResource(R.drawable.baseline_pause_24)
@@ -102,16 +110,18 @@ class Player(
 
         playerFsBinding.soundtrackSeekBar.progress = getProgress()
         playerFsBinding.soundtrackSeekBar.max = getDuration()
+        setOnComplete()
+        play()
 
     }
 
     fun shuffle(){
-        copyTracks = nextTracks.toMutableList()
+        copyTracks = nextTracks
         nextTracks.shuffle()
     }
 
     fun unshuffle(){
-        nextTracks = copyTracks.toMutableList()
+        nextTracks = copyTracks
         copyTracks.clear()
     }
 
@@ -143,36 +153,41 @@ class Player(
     fun next(){
         if (isLooping == 2){
             mediaPlayer.seekTo(0)
+            play()
         } else {
             if (nextTracks.size == 0){
                 if (isLooping == 0){
                     trackPlaying = Track()
                     stop()
-                } else if (isLooping == 2){
-                    play(prevTracks[0])
-                    prevTracks.removeAt(0)
-                    nextTracks.addAll(prevTracks)
+                } else if (isLooping == 1){
+                    setPrev(trackPlaying)
+                    nextTracks.addAll(prevTracks.reversed())
+                    prevTracks.clear()
+                    if (nextTracks.isNotEmpty()) {
+                        play(nextTracks[0])
+                        nextTracks.removeAt(0)
+                    }
                 }
-
             } else {
                 setPrev(trackPlaying)
-                Log.d("test", prevTracks.toString())
-
                 play(nextTracks[0])
                 nextTracks.removeAt(0)
-
                 setOnComplete()
             }
         }
-
-
     }
 
     fun setPrev(track: Track){
         prevTracks.add(0, track)
     }
+
+    fun setPrev(tracks: MutableList<Track>){
+        prevTracks.clear()
+        prevTracks.addAll(tracks)
+    }
+
     fun prev(){
-        if (prevTracks.size == 0){
+        if (prevTracks.isEmpty()){
             mediaPlayer.seekTo(0)
         } else if (mediaPlayer.currentPosition >= 3000){
             mediaPlayer.seekTo(0)

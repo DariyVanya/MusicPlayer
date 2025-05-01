@@ -21,4 +21,13 @@ interface JamendoApi {
         @Query("order") order: String = "popularity_total",
         @Query("page") page: Int = 1
     ): JamendoTrackResponse
+
+    @GET("tracks")
+    suspend fun searchTracks(
+        @Query("client_id") clientId: String = "ecb07a90",
+        @Query("format") format: String = "json",
+        @Query("limit") limit: Int = 50,
+        @Query("search") search: String,
+        @Query("include") include: String = "musicinfo"
+    ): JamendoTrackResponse
 }

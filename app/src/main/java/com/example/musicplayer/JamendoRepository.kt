@@ -7,6 +7,8 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Query
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 
 class JamendoRepository {
 
@@ -62,6 +64,24 @@ class JamendoRepository {
             } ?: emptyList()
         } catch (e: Exception) {
             Log.e("Jamendo", "Error fetching popular tracks", e)
+            emptyList()
+        }
+    }
+
+    suspend fun searchTracks(query: String): List<Track> {
+        return try {
+            api.searchTracks(search = query).results?.map { track ->
+                Track(
+                    id = track.id,
+                    name = track.name,
+                    artist = track.artist_name,
+                    genre = track.musicinfo?.tags?.genres?.firstOrNull() ?: "Unknown",
+                    photo = track.album_image ?: "android.resource://com.example.musicplayer/drawable/cover",
+                    uri = track.audio
+                )
+            } ?: emptyList()
+        } catch (e: Exception) {
+            Log.e("JamendoRepository", "Error searching tracks: ${e.message}")
             emptyList()
         }
     }
